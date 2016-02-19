@@ -86,7 +86,7 @@ def rally_stories_for_iteration(iteration)
   query.page_size = 1000
   query.limit = 1000
   query.order = "FormattedID Desc"
-  query.query_string = "(Iteration.Name = #{iteration})"
+  query.query_string = "(Iteration.Name = \"#{iteration}\")"
   rally.find(query)
 end
 
@@ -97,7 +97,7 @@ def rally_defects_for_iteration(iteration)
   query.page_size = 1000
   query.limit = 1000
   query.order = "FormattedID Desc"
-  query.query_string = "(Iteration.Name = #{iteration})"
+  query.query_string = "(Iteration.Name = \"#{iteration}\")"
   rally.find(query)
 end
 
@@ -119,12 +119,12 @@ def trello_list(name, board)
   list
 end
 
-def cards(list)
-  @cards ||= list.cards
+def cards(board)
+  @cards ||= board.cards
 end
 
-def import_card(card_name, attachment_name, attachment_url, list)
-  if cards(list).any? {|c| c.name == card_name }
+def import_card(card_name, attachment_name, attachment_url, list, board)
+  if cards(board).any? {|c| c.name == card_name }
     puts "Card '#{card_name}' already exists"
   else
     puts "Creating card: #{card_name}"
@@ -133,12 +133,12 @@ def import_card(card_name, attachment_name, attachment_url, list)
   end
 end
 
-def import_rally_entities_as_cards(rally_entities, entity_type, attachment_name, trello_list)
+def import_rally_entities_as_cards(rally_entities, entity_type, attachment_name, trello_list, board)
   projectId = rally_entities.first.Project.read.ObjectID
   rally_entities.each do |entity|
     card_name = "#{entity.FormattedID}: #{entity.name}"
     story_url = "https://rally1.rallydev.com/#/#{projectId}d/detail/#{entity_type}/#{entity.ObjectID}"
-    import_card(card_name, attachment_name, story_url, trello_list)
+    import_card(card_name, attachment_name, story_url, trello_list, board)
   end
 end
 
@@ -160,6 +160,5 @@ board = trello_board(@config['trello']['board'])
 list = trello_list(@config['trello']['list'], board)
 puts "Importing to board '#{board.name}'"
 puts "Importing to list '#{list.name}'"
-import_rally_entities_as_cards(defects, 'defect', "Rally Defect", list) if @config['rally']['defects']
-import_rally_entities_as_cards(stories, 'userstory', "Rally User Story", list)
-
+import_rally_entities_as_cards(defects, 'defect', "Rally Defect", list, board) if @config['rally']['defects'] && defects.any?
+import_rally_entities_as_cards(stories, 'userstory', "Rally User Story", list, board)
