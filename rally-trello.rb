@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'reverse_markdown'
 require 'yaml'
 require 'rally_api'
 require 'trello'
@@ -82,7 +83,7 @@ end
 def rally_stories_for_iteration(iteration)
   query = RallyAPI::RallyQuery.new()
   query.type = "hierarchicalrequirement"
-  query.fetch = "Name,FormattedID,Project,ObjectID"
+  query.fetch = "Name,FormattedID,Project,ObjectID,Description,PlanEstimate,AcceptanceCriteria"
   query.page_size = 1000
   query.limit = 1000
   query.order = "FormattedID Desc"
@@ -93,7 +94,7 @@ end
 def rally_defects_for_iteration(iteration)
   query = RallyAPI::RallyQuery.new()
   query.type = "defect"
-  query.fetch = "Name,FormattedID,Project,ObjectID"
+  query.fetch = "Name,FormattedID,Project,ObjectID,Description,PlanEstimate,AcceptanceCriteria"
   query.page_size = 1000
   query.limit = 1000
   query.order = "FormattedID Desc"
@@ -123,12 +124,12 @@ def cards(board)
   @cards ||= board.cards
 end
 
-def import_card(card_name, attachment_name, attachment_url, list, board)
+def import_card(card_name, descr, attachment_name, attachment_url, list, board)
   if cards(board).any? {|c| c.name == card_name }
     puts "Card '#{card_name}' already exists"
   else
     puts "Creating card: #{card_name}"
-    card = Trello::Card.create(name: card_name, list_id: list.id)
+    card = Trello::Card.create(name: card_name, list_id: list.id, desc: descr)
     card.add_attachment(attachment_url, attachment_name)
   end
 end
@@ -138,7 +139,10 @@ def import_rally_entities_as_cards(rally_entities, entity_type, attachment_name,
   rally_entities.each do |entity|
     card_name = "#{entity.FormattedID}: #{entity.name}"
     story_url = "https://rally1.rallydev.com/#/#{projectId}d/detail/#{entity_type}/#{entity.ObjectID}"
-    import_card(card_name, attachment_name, story_url, trello_list, board)
+    description = ReverseMarkdown.convert(entity["Description"], unknown_tags: :bypass)
+    acc_criteria = ReverseMarkdown.convert(entity["AcceptanceCriteria"], unknown_tags: :bypass)
+    full_description = "[#{entity["PlanEstimate"]}]: \n #{description} \n Acceptance Criteria: #{acc_criteria}"
+    import_card(card_name, full_description, attachment_name, story_url, trello_list, board)
   end
 end
 
@@ -154,7 +158,6 @@ defects = rally_defects_for_iteration(iteration)
 if defects.length < 1
   puts "No defects found for iteration '#{iteration}'"
 end
-
 
 board = trello_board(@config['trello']['board'])
 list = trello_list(@config['trello']['list'], board)
