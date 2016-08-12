@@ -16,14 +16,21 @@ GEM
     i18n (0.6.11)
     json (1.8.1)
     mime-types (2.4.3)
+    mini_portile2 (2.1.0)
     minitest (5.4.3)
     netrc (0.8.0)
+    nokogiri (1.6.8)
+      mini_portile2 (~> 2.1.0)
+      pkg-config (~> 1.1.7)
     oauth (0.4.7)
+    pkg-config (1.1.7)
     rally_api (1.1.2)
       httpclient (~> 2.4.0)
     rest-client (1.7.2)
       mime-types (>= 1.16, < 3.0)
       netrc (~> 0.7)
+    reverse_markdown (1.0.3)
+      nokogiri
     ruby-trello (1.1.2)
       activemodel (>= 3.2.0)
       addressable (~> 2.3)
@@ -40,5 +47,9 @@ PLATFORMS
 
 DEPENDENCIES
   rally_api
+  reverse_markdown
   ruby-trello
   slop (= 3.6.0)
+
+BUNDLED WITH
+   1.10.6
